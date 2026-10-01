@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pyrite</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23d9a521'/></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" />
+<style>
+/* pyrite v0.3 - keeping the css simple */
+:root{
+  --accent:#d9a521;
+  --bg:#111113; --panel:#1a1a1e; --input:#232327;
+  --line:#2c2c32;
+  --text:#e8e6e0; --muted:#9a978e;
+}
+[data-theme="light"]{
+  --bg:#eceae4; --panel:#ffffff; --input:#f0eee8;
+  --line:#d8d5cb;
+  --text:#22211d; --muted:#77746a;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;overflow:hidden}
+button,input,select{font:inherit;font-family:inherit}
+
+/* top bar */
+.topbar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:20}
+.brand{display:flex;align-items:center;gap:8px;white-space:nowrap;user-select:none}
+.mark{width:28px;height:28px;border-radius:7px;background:var(--accent);color:#111;font-weight:bold;display:grid;place-items:center;font-size:14px}
+.brand b{font-size:15px}
+.brand span{display:block;font-size:10px;color:var(--muted);font-weight:normal}
+.nav{display:flex;gap:4px}
+.btn{background:transparent;border:1px solid transparent;color:var(--text);border-radius:8px;padding:7px 9px;cursor:pointer;font-size:13px}
+.btn:hover{background:var(--input);border-color:var(--line)}
+.btn:disabled{opacity:.3;cursor:default}
+.urlwrap{flex:1;display:flex;gap:6px}
+#url{flex:1;background:var(--input);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;outline:none}
+#url:focus{border-color:var(--accent)}
+#go{background:var(--accent);border:0;color:#111;font-weight:bold;border-radius:8px;padding:8px 14px;cursor:pointer}
+#go:hover{filter:brightness(1.07)}
+#progress{position:absolute;left:0;bottom:-1px;height:2px;width:0%;background:var(--accent);transition:width .25s}
+
+/* main */
+main{height:calc(100vh - 53px);position:relative}
+#home{height:100%;overflow:auto;max-width:760px;margin:0 auto;padding:40px 20px}
+#home h1{font-size:28px;margin:0}
+#home .sub{color:var(--muted);margin:6px 0 18px;font-size:13px}
+.searchrow{display:flex;gap:8px}
+.searchrow input{flex:1;background:var(--input);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;outline:none}
+.searchrow input:focus{border-color:var(--accent)}
+.searchrow button{background:var(--text);color:var(--bg);border:0;border-radius:8px;padding:0 16px;cursor:pointer}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:14px}
+.panel h3{margin:0 0 8px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:normal}
+.chip{display:inline-block;background:var(--input);border:1px solid var(--line);border-radius:20px;padding:6px 11px;margin:0 6px 6px 0;font-size:12px;cursor:pointer}
+.chip:hover{border-color:var(--accent)}
+.empty{color:var(--muted);font-size:13px;margin:0}
+.hint{color:var(--muted);font-size:12px;margin-top:20px}
+.hint kbd{background:var(--input);border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:11px}
+
+/* browser */
+#browser{position:absolute;inset:0;display:none;background:#fff}
+#browser.on{display:block}
+#frame{width:100%;height:100%;border:0}
+#loader{position:absolute;inset:0;display:grid;place-items:center;background:var(--bg);font-size:13px;color:var(--muted)}
+#loader.hide{display:none}
+
+/* drawers - basic slide */
+#backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:40}
+#backdrop.on{display:block}
+.drawer{position:fixed;top:0;bottom:0;width:330px;max-width:90vw;background:var(--panel);border-left:1px solid var(--line);border-right:1px solid var(--line);z-index:50;display:flex;flex-direction:column;transition:transform .25s ease}
+#lib{left:0;transform:translateX(-100%)}
+#settings{right:0;transform:translateX(100%)}
+#lib.open,#settings.open{transform:none}
+.dhead{display:flex;align-items:center;gap:8px;padding:14px;border-bottom:1px solid var(--line)}
+.dhead h2{margin:0;font-size:14px;flex:1;font-weight:bold}
+.dbody{overflow:auto;padding:14px;flex:1}
+.tabs{display:flex;gap:4px;margin-bottom:10px}
+.tabs button{flex:1;background:var(--input);border:1px solid var(--line);color:var(--muted);border-radius:7px;padding:7px;cursor:pointer}
+.tabs button.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.item{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;font-size:13px}
+.item:hover{background:var(--input)}
+.item small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.item .x{margin-left:auto;background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px}
+.sec{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--bg)}
+.sec h4{margin:0 0 2px;font-size:13px}
+.sec p{margin:0 0 8px;font-size:12px;color:var(--muted)}
+.field{width:100%;background:var(--input);border:1px solid var(--line);color:var(--text);border-radius:7px;padding:8px;font-size:13px;outline:none}
+.field:focus{border-color:var(--accent)}
+.btnrow{display:flex;gap:6px;margin-top:8px}
+.btnrow .btn{flex:1;background:var(--input);border:1px solid var(--line);text-align:center}
+.btnrow .btn.primary{background:var(--accent);color:#111;border-color:var(--accent);font-weight:bold}
+.row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.sw{width:36px;height:20px;border-radius:20px;background:#555;border:0;cursor:pointer;position:relative}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:var(--accent)}
+.sw.on::after{left:18px}
+.colors{display:flex;gap:6px;margin-top:8px}
+.dotpick{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.dotpick.on{border-color:var(--text)}
+.status{font-size:12px;color:var(--muted);margin-top:6px}
+#toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--panel);border:1px solid var(--line);padding:9px 14px;border-radius:8px;font-size:13px}
+@media(max-width:640px){ .nav.hideS{display:none} .brand span{display:none} }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><div class="mark">p.</div><div><b>pyrite</b><span>proxy v0.3</span></div></div>
+  <div class="nav hideS">
+    <button class="btn" id="backBtn" title="back">back</button>
+    <button class="btn" id="fwdBtn" title="forward">fwd</button>
+    <button class="btn" id="reloadBtn" title="reload">reload</button>
+    <button class="btn" id="homeBtn" title="home">home</button>
+  </div>
+  <div class="urlwrap"><input id="url" placeholder="paste a url, or type a search" autocomplete="off" spellcheck="false" /><button id="go">go</button></div>
+  <div class="nav">
+    <button class="btn" id="libBtn">saved</button>
+    <button class="btn" id="blankBtn" title="open in about:blank">blank</button>
+    <button class="btn" id="setBtn">settings</button>
+  </div>
+  <div id="progress"></div>
+</header>
+
+<main>
+  <section id="home">
+    <h1>pyrite</h1>
+    <div class="sub">type something above to start. everything runs through your worker.</div>
+    <div class="searchrow"><input id="search" placeholder="search or enter url..." /><button id="searchGo">search</button></div>
+
+    <div class="panel"><h3>bookmarks</h3><div id="homeMarks"><p class="empty">nothing saved yet. bookmark pages from the saved menu.</p></div></div>
+    <div class="panel"><h3>recent</h3><div id="homeHist"><p class="empty">no history yet.</p></div></div>
+
+    <p class="hint">shortcuts: <kbd>ctrl+k</kbd> focus bar, <kbd>esc</kbd> close menus. only use this on sites you own or are allowed to embed.</p>
+  </section>
+
+  <section id="browser">
+    <div id="loader"><span id="loadText">loading...</span></div>
+    <iframe id="frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"></iframe>
+  </section>
+</main>
+
+<div id="backdrop"></div>
+
+<aside class="drawer" id="lib">
+  <div class="dhead"><h2>saved</h2><button class="btn" data-close>close</button></div>
+  <div class="dbody">
+    <div class="tabs"><button id="tabMarks" class="on">bookmarks</button><button id="tabHist">history</button></div>
+    <div id="marksList"></div>
+    <div id="histList" style="display:none"></div>
+    <div class="btnrow"><button class="btn" id="addMark">bookmark this page</button><button class="btn" id="clearHist">clear history</button></div>
+  </div>
+</aside>
+
+<aside class="drawer" id="settings">
+  <div class="dhead"><h2>settings</h2><button class="btn" data-close>close</button></div>
+  <div class="dbody">
+    <div class="sec"><h4>worker</h4><p>your cloudflare worker url. saved in this browser only.</p>
+      <input class="field" id="workerUrl" placeholder="https://something.workers.dev" />
+      <div class="btnrow"><button class="btn primary" id="saveWorker">save</button><button class="btn" id="testWorker">test</button></div>
+      <div class="status" id="workerStatus">not tested yet</div>
+    </div>
+
+    <div class="sec"><h4>look</h4><p>theme and color.</p>
+      <select class="field" id="theme"><option value="dark">dark</option><option value="light">light</option></select>
+      <div class="colors" id="colors"></div>
+      <div class="row"><span>animations</span><button class="sw on" id="swAnim"></button></div>
+    </div>
+
+    <div class="sec"><h4>browsing</h4>
+      <select class="field" id="engine">
+        <option value="https://duckduckgo.com/?q=%s">duckduckgo</option>
+        <option value="https://www.google.com/search?q=%s">google</option>
+        <option value="https://www.bing.com/search?q=%s">bing</option>
+        <option value="https://search.brave.com/search?q=%s">brave</option>
+      </select>
+      <div class="row"><span>force https</span><button class="sw on" id="swHttps"></button></div>
+      <div class="row"><span>allow forms</span><button class="sw on" id="swForms"></button></div>
+      <div class="row"><span>allow popups</span><button class="sw on" id="swPopups"></button></div>
+      <div class="row"><span>always open in about:blank</span><button class="sw" id="swBlank"></button></div>
+    </div>
+
+    <div class="sec"><h4>tab cloak</h4><p>changes the tab title. panic key bounces you out fast.</p>
+      <select class="field" id="cloak">
+        <option value="default">pyrite</option>
+        <option value="classroom">Google Classroom</option>
+        <option value="docs">Google Docs</option>
+        <option value="drive">Google Drive</option>
+        <option value="canvas">Canvas</option>
+        <option value="custom">custom...</option>
+      </select>
+      <div style="display:flex;gap:6px;margin-top:6px"><input class="field" id="customTitle" placeholder="custom title" /><input class="field" id="panicKey" maxlength="1" placeholder="key" style="max-width:60px" /></div>
+      <input class="field" id="customIcon" placeholder="custom favicon url (optional)" style="margin-top:6px" />
+      <input class="field" id="panicUrl" placeholder="panic url (default: classroom)" style="margin-top:6px" />
+      <div class="btnrow"><button class="btn" id="applyCloak">apply</button><button class="btn" id="panicNow">panic</button></div>
+    </div>
+
+    <div class="sec"><h4>data</h4>
+      <div class="btnrow"><button class="btn" id="exportBtn">export</button><button class="btn" id="importBtn">import</button><button class="btn" id="resetBtn">reset</button></div>
+      <input type="file" id="importFile" accept="application/json" style="display:none" />
+    </div>
+    <p class="hint">pyrite v0.3 - if something breaks, check the worker url first.</p>
+  </div>
+</aside>
+
+<div id="toasts"></div>
+
+<script>
+// simple stuff, no framework
+var $ = function(s){ return document.querySelector(s); };
+var DEFAULT_WORKER = "https://pythonwebproxy.axononymous.workers.dev";
+
+function get(k,f){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):f; }catch(e){ return f; } }
+function set(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+
+var S = Object.assign({
+  worker: DEFAULT_WORKER, theme:"dark", accent:"#d9a521",
+  anim:true, engine:"https://duckduckgo.com/?q=%s",
+  https:true, forms:true, popups:true, blankGo:false,
+  cloak:"default", customTitle:"", customIcon:"", panicKey:"`", panicUrl:"https://classroom.google.com"
+}, get("pyrite-settings",{}));
+
+// migrate old installs that still default to google
+if (S.engine && S.engine.indexOf("google.com/search") !== -1) {
+  S.engine = "https://duckduckgo.com/?q=%s";
+  set("pyrite-settings", S);
+}
+
+var historyStack = get("pyrite-history",[]);
+var histIdx = historyStack.length - 1;
+var bookmarks = get("pyrite-marks",[]); // starts empty, no defaults
+
+function toast(msg){
+  var t=document.createElement("div"); t.className="toast"; t.textContent=msg;
+  $("#toasts").appendChild(t);
+  setTimeout(function(){ t.remove(); }, 2200);
+}
+function proxyFor(u){ return S.worker.replace(/\/$/,"") + "/?url=" + encodeURIComponent(u); }
+function normalize(input){
+  var u=(input||"").trim(); if(!u) return null;
+  if(/^https?:\/\//i.test(u)) return u;
+  // has a dot and no spaces -> probably a url
+  var noProto = u.replace(/^https?:\/\//,"");
+  if(/^[\w-]+(\.[\w-]+)+/.test(noProto) && u.indexOf(" ")===-1) return (S.https?"https://":"http://")+u;
+  return S.engine.replace("%s",encodeURIComponent(u));
+}
+function flip(el,on){ if(on) el.classList.add("on"); else el.classList.remove("on"); }
+
+function applySettings(){
+  document.documentElement.dataset.theme = S.theme;
+  document.documentElement.style.setProperty("--accent", S.accent);
+  document.body.style.setProperty("--anim", S.anim ? "1" : "0");
+  // turn off drawer animation if user disabled it
+  document.querySelectorAll(".drawer").forEach(function(el){ el.style.transition = S.anim ? "" : "none"; });
+  $("#workerUrl").value=S.worker; $("#theme").value=S.theme; $("#engine").value=S.engine;
+  $("#customTitle").value=S.customTitle||""; $("#customIcon").value=S.customIcon||""; $("#panicKey").value=S.panicKey||""; $("#panicUrl").value=S.panicUrl||"";
+  $("#cloak").value=S.cloak;
+  flip($("#swAnim"),S.anim); flip($("#swHttps"),S.https); flip($("#swForms"),S.forms); flip($("#swPopups"),S.popups); flip($("#swBlank"),S.blankGo);
+  document.querySelectorAll(".dotpick").forEach(function(el){ el.classList.toggle("on", el.dataset.c===S.accent); });
+  // rebuild sandbox
+  var p=["allow-scripts","allow-same-origin"];
+  if(S.forms)p.push("allow-forms"); if(S.popups)p.push("allow-popups");
+  p.push("allow-downloads");
+  $("#frame").setAttribute("sandbox",p.join(" "));
+  set("pyrite-settings",S);
+}
+
+var DEFAULT_ICON = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23d9a521'/></svg>";
+var CLOAKS={
+  default:{t:"pyrite",i:DEFAULT_ICON},
+  classroom:{t:"Google Classroom",i:"https://www.google.com/s2/favicons?sz=64&domain=classroom.google.com"},
+  docs:{t:"Untitled document - Google Docs",i:"https://www.google.com/s2/favicons?sz=64&domain=docs.google.com"},
+  drive:{t:"My Drive - Google Drive",i:"https://www.google.com/s2/favicons?sz=64&domain=drive.google.com"},
+  canvas:{t:"Dashboard - Canvas",i:"https://www.google.com/s2/favicons?sz=64&domain=canvas.instructure.com"}
+};
+function setIcon(url){
+  var link = document.querySelector("link[rel=icon]");
+  if(!link){ link=document.createElement("link"); link.rel="icon"; document.head.appendChild(link); }
+  link.href = url;
+  var short = document.querySelector("link[rel='shortcut icon']");
+  if(short) short.href = url;
+}
+function applyCloak(){
+  var c = CLOAKS[S.cloak] || CLOAKS.default;
+  var title = S.cloak==="custom" ? (S.customTitle||"Home") : c.t;
+  var icon = S.cloak==="custom" ? (S.customIcon||DEFAULT_ICON) : c.i;
+  document.title=title;
+  setIcon(icon);
+}
+function setProgress(p){ var b=$("#progress"); b.style.width=p+"%"; if(p>=100) setTimeout(function(){b.style.width="0%";},300); }
+
+var current=null;
+function go(raw, push){
+  if(push===undefined) push=true;
+  var target=normalize(raw); if(!target) return;
+  $("#url").value=target;
+  if(push){
+    historyStack=historyStack.slice(0,histIdx+1);
+    historyStack.push({u:target,t:Date.now()});
+    if(historyStack.length>100) historyStack.shift();
+    histIdx=historyStack.length-1; set("pyrite-history",historyStack);
+  }
+  current=target;
+  if(S.blankGo){ openBlank(proxyFor(target),document.title); return; }
+  $("#home").style.display="none"; $("#browser").classList.add("on");
+  $("#loader").classList.remove("hide");
+  $("#loadText").textContent="loading "+target+" ...";
+  setProgress(30);
+  $("#frame").src=proxyFor(target);
+  renderHomeLists(); updateNav();
+}
+function updateNav(){ $("#backBtn").disabled=histIdx<=0; $("#fwdBtn").disabled=histIdx>=historyStack.length-1; }
+$("#frame").addEventListener("load",function(){ $("#loader").classList.add("hide"); setProgress(100); });
+
+function openBlank(innerUrl,title){
+  var w=window.open("about:blank","_blank"); if(!w){toast("popup blocked, allow popups");return;}
+  w.document.write("<title>"+title.replace(/</g,"&lt;")+"</title><style>html,body{margin:0;height:100%}iframe{width:100%;height:100%;border:0}</style><iframe src='"+innerUrl.replace(/'/g,"%27")+"'></iframe>");
+  w.document.close();
+}
+
+// drawers
+function openDrawer(which){ closeDrawers(); $("#backdrop").classList.add("on"); $(which).classList.add("open"); }
+function closeDrawers(){ $("#lib").classList.remove("open"); $("#settings").classList.remove("open"); $("#backdrop").classList.remove("on"); }
+$("#libBtn").onclick=function(){renderLib();openDrawer("#lib")};
+$("#setBtn").onclick=function(){openDrawer("#settings")};
+$("#backdrop").onclick=closeDrawers;
+document.querySelectorAll("[data-close]").forEach(function(b){b.onclick=closeDrawers});
+
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])})}
+function renderLib(){
+  var m=$("#marksList"),h=$("#histList");
+  m.innerHTML = bookmarks.length ? "" : "<p class='empty'>no bookmarks.</p>";
+  bookmarks.forEach(function(b,i){
+    var d=document.createElement("div");d.className="item";
+    d.innerHTML="<div style='flex:1'><b>"+esc(b.n)+"</b><small>"+esc(b.u)+"</small></div><button class='x'>x</button>";
+    d.onclick=function(e){ if(e.target.className==="x")return; closeDrawers(); go(b.u); };
+    d.querySelector(".x").onclick=function(){bookmarks.splice(i,1);set("pyrite-marks",bookmarks);renderLib();renderHomeLists();};
+    m.appendChild(d);
+  });
+  h.innerHTML = historyStack.length ? "" : "<p class='empty'>empty.</p>";
+  historyStack.slice().reverse().slice(0,50).forEach(function(en){
+    var d=document.createElement("div");d.className="item";
+    d.innerHTML="<div><b>"+esc(en.u)+"</b></div>";
+    d.onclick=function(){closeDrawers();go(en.u);};
+    h.appendChild(d);
+  });
+}
+$("#tabMarks").onclick=function(){this.classList.add("on");$("#tabHist").classList.remove("on");$("#marksList").style.display="";$("#histList").style.display="none"};
+$("#tabHist").onclick=function(){this.classList.add("on");$("#tabMarks").classList.remove("on");$("#histList").style.display="";$("#marksList").style.display="none"};
+$("#addMark").onclick=function(){
+  if(!current) return toast("nothing to save yet");
+  var n=prompt("name for bookmark:",current) || current;
+  bookmarks.unshift({n:n,u:current}); set("pyrite-marks",bookmarks);
+  renderLib();renderHomeLists(); toast("saved");
+};
+$("#clearHist").onclick=function(){historyStack=[];histIdx=-1;set("pyrite-history",[]);renderLib();renderHomeLists();updateNav();};
+
+function renderHomeLists(){
+  var hm=$("#homeMarks"),hh=$("#homeHist");hm.innerHTML="";hh.innerHTML="";
+  if(!bookmarks.length) hm.innerHTML="<p class='empty'>nothing saved yet. bookmark pages from the saved menu.</p>";
+  bookmarks.slice(0,8).forEach(function(b){var c=document.createElement("span");c.className="chip";c.textContent=b.n;c.title=b.u;c.onclick=function(){go(b.u)};hm.appendChild(c);});
+  if(!historyStack.length) hh.innerHTML="<p class='empty'>no history yet.</p>";
+  historyStack.slice().reverse().slice(0,8).forEach(function(en){var c=document.createElement("span");c.className="chip";c.textContent=en.u;c.title=en.u;c.onclick=function(){go(en.u)};hh.appendChild(c);});
+}
+
+// top bar
+$("#go").onclick=function(){go($("#url").value)};
+$("#url").onkeydown=function(e){if(e.key==="Enter")go(e.target.value)};
+$("#searchGo").onclick=function(){go($("#search").value)};
+$("#search").onkeydown=function(e){if(e.key==="Enter")go(e.target.value)};
+$("#backBtn").onclick=function(){if(histIdx>0){histIdx--;go(historyStack[histIdx].u,false);updateNav();}};
+$("#fwdBtn").onclick=function(){if(histIdx<historyStack.length-1){histIdx++;go(historyStack[histIdx].u,false);updateNav();}};
+$("#reloadBtn").onclick=function(){ if(current) $("#frame").src=proxyFor(current); };
+$("#homeBtn").onclick=function(){$("#browser").classList.remove("on");$("#home").style.display="";};
+$("#blankBtn").onclick=function(){ if(!current) return toast("nothing open"); openBlank(proxyFor(current),document.title); };
+document.addEventListener("keydown",function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#url").focus();$("#url").select();}
+  if(e.key==="Escape")closeDrawers();
+  if(e.key===S.panicKey && document.activeElement.tagName!=="INPUT" && document.activeElement.tagName!=="SELECT"){ location.href=S.panicUrl||"https://classroom.google.com"; }
+});
+
+// settings wiring
+var ACCENTS=["#d9a521","#4a7dff","#3fa66a","#b052e0","#d9534f"];
+(function(){
+  var w=$("#colors"); ACCENTS.forEach(function(c){
+    var d=document.createElement("div");d.className="dotpick"+(S.accent===c?" on":"");d.dataset.c=c;d.style.background=c;
+    d.onclick=function(){S.accent=c;applySettings();}; w.appendChild(d);
+  });
+})();
+function bindToggle(id,key){ $(id).onclick=function(){S[key]=!S[key];applySettings();}; }
+bindToggle("#swAnim","anim");bindToggle("#swHttps","https");bindToggle("#swForms","forms");bindToggle("#swPopups","popups");bindToggle("#swBlank","blankGo");
+$("#theme").onchange=function(e){S.theme=e.target.value;applySettings();};
+$("#engine").onchange=function(e){S.engine=e.target.value;applySettings();};
+$("#cloak").onchange=function(e){S.cloak=e.target.value;applySettings();applyCloak();};
+$("#customTitle").oninput=function(e){S.customTitle=e.target.value;if(S.cloak==="custom")applyCloak();set("pyrite-settings",S);};
+$("#customIcon").oninput=function(e){S.customIcon=e.target.value;if(S.cloak==="custom")applyCloak();set("pyrite-settings",S);};
+$("#panicKey").oninput=function(e){S.panicKey=e.target.value;set("pyrite-settings",S);};
+$("#panicUrl").oninput=function(e){S.panicUrl=e.target.value;set("pyrite-settings",S);};
+$("#applyCloak").onclick=function(){applyCloak();toast("updated");};
+$("#panicNow").onclick=function(){location.href=S.panicUrl||"https://classroom.google.com";};
+$("#saveWorker").onclick=function(){S.worker=$("#workerUrl").value.trim()||DEFAULT_WORKER;applySettings();toast("saved");};
+$("#testWorker").onclick=function(){
+  $("#workerStatus").textContent="testing...";
+  fetch(S.worker.replace(/\/$/,"")+"/?url="+encodeURIComponent("https://example.com"),{method:"HEAD"}).then(function(r){
+    $("#workerStatus").textContent=r.ok ? "looks good ("+r.status+")" : "returned "+r.status;
+  }).catch(function(){ $("#workerStatus").textContent="cant reach worker, check url"; });
+};
+$("#exportBtn").onclick=function(){
+  var blob=new Blob([JSON.stringify({settings:S,bookmarks:bookmarks,history:historyStack},null,2)],{type:"application/json"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="pyrite-backup.json";a.click();
+};
+$("#importBtn").onclick=function(){$("#importFile").click();};
+$("#importFile").onchange=function(e){
+  var f=e.target.files[0]; if(!f)return;
+  var r=new FileReader(); r.onload=function(){ try{
+    var j=JSON.parse(r.result); if(j.settings)S=j.settings; if(j.bookmarks)bookmarks=j.bookmarks; if(j.history){historyStack=j.history;histIdx=historyStack.length-1;}
+    applySettings();applyCloak();renderHomeLists();updateNav();toast("imported");
+  }catch(err){toast("bad file");} }; r.readAsText(f);
+};
+$("#resetBtn").onclick=function(){ if(confirm("reset everything?")){ localStorage.clear(); location.reload(); } };
+
+// init
+applySettings(); applyCloak(); renderHomeLists(); updateNav();
+var q=new URLSearchParams(location.search).get("url");
+if(q){ $("#url").value=q; go(q); }
+else if(historyStack[histIdx]){ $("#url").value=historyStack[histIdx].u; }
+</script>
+</body>
+</html>
